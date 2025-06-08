@@ -1,0 +1,246 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns:http="http://www.mulesoft.org/schema/mule/http"
+      xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit"
+      xmlns:python="http://www.mulesoft.org/schema/mule/python"
+      xmlns:file="http://www.mulesoft.org/schema/mule/file"
+      xmlns="http://www.mulesoft.org/schema/mule/core"
+      xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+                          http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+                          http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd
+                          http://www.mulesoft.org/schema/mule/python http://www.mulesoft.org/schema/mule/python/current/mule-python.xsd
+                          http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd">
+
+    <http:listener-config name="vegetation-management-api-httpListenerConfig">
+        <http:listener-connection host="0.0.0.0" port="8081" />
+    </http:listener-config>
+
+    <apikit:config name="vegetation-management-api-config" 
+                   raml="api/vegetation-management-api.raml" 
+                   outboundHeadersMapName="outboundHeaders" 
+                   httpStatusVarName="httpStatus" />
+
+    <python:config name="Python_Config" doc:name="Python Config">
+        <python:python-path value="/usr/bin/python3" />
+    </python:config>
+
+    <file:config name="File_Config" doc:name="File Config">
+        <file:connection workingDir="/tmp/vegetation-images" />
+    </file:config>
+
+    <!-- Main API Flow -->
+    <flow name="vegetation-management-api-main">
+        <http:listener doc:name="Listener" 
+                       config-ref="vegetation-management-api-httpListenerConfig" 
+                       path="/api/v1/*">
+            <http:response statusCode="#[vars.httpStatus default 200]">
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:response>
+            <http:error-response statusCode="#[vars.httpStatus default 500]">
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:error-response>
+        </http:listener>
+        <apikit:router config-ref="vegetation-management-api-config" />
+        <error-handler>
+            <on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" type="APIKIT:BAD_REQUEST">
+                <ee:transform doc:name="Transform Message">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  error_code: "BAD_REQUEST",
+  message: "Invalid request format",
+  timestamp: now()
+}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">400</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" type="APIKIT:NOT_FOUND">
+                <ee:transform doc:name="Transform Message">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  error_code: "NOT_FOUND",
+  message: "Resource not found",
+  timestamp: now()
+}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">404</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" type="APIKIT:METHOD_NOT_ALLOWED">
+                <ee:transform doc:name="Transform Message">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  error_code: "METHOD_NOT_ALLOWED",
+  message: "Method not allowed",
+  timestamp: now()
+}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">405</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" type="APIKIT:NOT_ACCEPTABLE">
+                <ee:transform doc:name="Transform Message">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  error_code: "NOT_ACCEPTABLE",
+  message: "Not acceptable content type",
+  timestamp: now()
+}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">406</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" type="APIKIT:UNSUPPORTED_MEDIA_TYPE">
+                <ee:transform doc:name="Transform Message">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  error_code: "UNSUPPORTED_MEDIA_TYPE",
+  message: "Unsupported media type",
+  timestamp: now()
+}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">415</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" type="APIKIT:NOT_IMPLEMENTED">
+                <ee:transform doc:name="Transform Message">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  error_code: "NOT_IMPLEMENTED",
+  message: "Feature not implemented",
+  timestamp: now()
+}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">501</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+        </error-handler>
+    </flow>
+
+    <!-- Health Check Flow -->
+    <flow name="get:\health:vegetation-management-api-config">
+        <ee:transform doc:name="Health Check Response">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  status: "healthy",
+  models_available: true,
+  timestamp: now()
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+
+    <!-- Analyze Vegetation Image Flow -->
+    <flow name="post:\vegetation\analyze:application\json:vegetation-management-api-config">
+        <set-variable value="#[uuid()]" doc:name="Set Analysis ID" variableName="analysisId"/>
+        <set-variable value="#[now()]" doc:name="Set Start Time" variableName="startTime"/>
+        
+        <flow-ref doc:name="Validate Input" name="validate-input-flow"/>
+        <flow-ref doc:name="Process Image with Hugging Face" name="huggingface-processing-flow"/>
+        <flow-ref doc:name="Format Response" name="format-response-flow"/>
+
+        <error-handler>
+            <on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate">
+                <ee:transform doc:name="Error Response">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  error_code: "PROCESSING_ERROR",
+  message: "Failed to process vegetation analysis",
+  details: error.description,
+  timestamp: now()
+}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">500</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+        </error-handler>
+    </flow>
+
+    <!-- Batch Analysis Flow -->
+    <flow name="post:\vegetation\batch-analyze:application\json:vegetation-management-api-config">
+        <set-variable value="#[payload.batch_id default uuid()]" doc:name="Set Batch ID" variableName="batchId"/>
+        
+        <ee:transform doc:name="Batch Response">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  batch_id: vars.batchId,
+  status: "submitted",
+  submitted_count: sizeOf(payload.images)
+}]]></ee:set-payload>
+            </ee:message>
+            <ee:variables>
+                <ee:set-variable variableName="httpStatus">202</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+    </flow>
+
+    <!-- Get Analysis Status Flow -->
+    <flow name="get:\vegetation\status\(analysisId):vegetation-management-api-config">
+        <set-variable value="#[attributes.uriParams.analysisId]" doc:name="Get Analysis ID" variableName="analysisId"/>
+        
+        <ee:transform doc:name="Mock Status Response">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  analysisId: vars.analysisId,
+  status: "completed",
+  results: {
+    vegetation_health_score: 0.85,
+    coverage_percentage: 75.2,
+    species_detected: ["oak", "maple", "grass"],
+    risk_level: "low",
+    recommendations: ["Regular watering recommended", "Monitor for pest activity"]
+  },
+  confidence_score: 0.92,
+  processing_time_ms: 2500,
+  timestamp: now()
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+
+</mule>

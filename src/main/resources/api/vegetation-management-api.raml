@@ -1,0 +1,154 @@
+#%RAML 1.0
+title: Vegetation Management Process API
+version: v1
+baseUri: http://localhost:8081/api/v1
+mediaType: application/json
+
+documentation:
+  - title: Vegetation Management API
+    content: |
+      This API provides vegetation management capabilities using Hugging Face image processing models.
+      It can analyze images for vegetation health, coverage, and management recommendations.
+
+types:
+  ImageAnalysisRequest:
+    type: object
+    properties:
+      imageUrl?: string
+      imageBase64?: string
+      analysisType: 
+        type: string
+        enum: [vegetation-health, coverage-analysis, species-identification, risk-assessment]
+      coordinates?:
+        type: object
+        properties:
+          latitude: number
+          longitude: number
+      metadata?:
+        type: object
+        properties:
+          timestamp?: datetime
+          weather?: string
+          season?: string
+
+  ImageAnalysisResponse:
+    type: object
+    properties:
+      analysisId: string
+      status: string
+      results:
+        type: object
+        properties:
+          vegetation_health_score?: number
+          coverage_percentage?: number
+          species_detected?: array
+          risk_level?: string
+          recommendations?: array
+      confidence_score: number
+      processing_time_ms: integer
+      timestamp: datetime
+
+  ErrorResponse:
+    type: object
+    properties:
+      error_code: string
+      message: string
+      details?: string
+      timestamp: datetime
+
+/vegetation:
+  /analyze:
+    post:
+      displayName: Analyze Vegetation Image
+      description: Submit an image for vegetation analysis using Hugging Face models
+      body:
+        application/json:
+          type: ImageAnalysisRequest
+          example:
+            imageUrl: "https://example.com/vegetation-image.jpg"
+            analysisType: "vegetation-health"
+            coordinates:
+              latitude: 40.7128
+              longitude: -74.0060
+            metadata:
+              timestamp: "2024-01-15T10:30:00Z"
+              season: "spring"
+      responses:
+        200:
+          body:
+            application/json:
+              type: ImageAnalysisResponse
+              example:
+                analysisId: "analysis-12345"
+                status: "completed"
+                results:
+                  vegetation_health_score: 0.85
+                  coverage_percentage: 75.2
+                  species_detected: ["oak", "maple", "grass"]
+                  risk_level: "low"
+                  recommendations: ["Regular watering recommended", "Monitor for pest activity"]
+                confidence_score: 0.92
+                processing_time_ms: 2500
+                timestamp: "2024-01-15T10:30:45Z"
+        400:
+          body:
+            application/json:
+              type: ErrorResponse
+        500:
+          body:
+            application/json:
+              type: ErrorResponse
+  
+  /batch-analyze:
+    post:
+      displayName: Batch Analyze Multiple Images
+      description: Submit multiple images for batch vegetation analysis
+      body:
+        application/json:
+          type: object
+          properties:
+            images:
+              type: array
+              items: ImageAnalysisRequest
+            batch_id?: string
+      responses:
+        202:
+          body:
+            application/json:
+              type: object
+              properties:
+                batch_id: string
+                status: string
+                submitted_count: integer
+        400:
+          body:
+            application/json:
+              type: ErrorResponse
+
+  /status/{analysisId}:
+    get:
+      displayName: Get Analysis Status
+      description: Retrieve the status and results of a vegetation analysis
+      responses:
+        200:
+          body:
+            application/json:
+              type: ImageAnalysisResponse
+        404:
+          body:
+            application/json:
+              type: ErrorResponse
+
+/health:
+  get:
+    displayName: Health Check
+    description: Check API health and model availability
+    responses:
+      200:
+        body:
+          application/json:
+            type: object
+            properties:
+              status: string
+              models_available: boolean
+              timestamp: datetime

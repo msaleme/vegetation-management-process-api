@@ -1,0 +1,134 @@
+# MuleSoft specific
+target/
+.mule/
+*.log
+deployments/
+.mule_repo/
+.metadata/
+
+# Anypoint Studio
+.metadata/
+.recommenders/
+RemoteSystemsTempFiles/
+**/.studio/
+
+# Maven
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.jar
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv/
+.env/
+
+# PyTorch/ML models cache
+.cache/
+transformers_cache/
+huggingface_hub/
+torch/
+torchvision/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Configuration files with secrets
+**/config/local.yaml
+**/config/dev.yaml
+**/config/prod.yaml
+application-local.yaml
+application-dev.yaml
+application-prod.yaml
+
+# Image processing temp files
+/tmp/vegetation-images/
+*.jpg
+*.jpeg
+*.png
+*.bmp
+*.tiff
+
+# Jupyter Notebooks
+.ipynb_checkpoints/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Archive files
+*.7z
+*.dmg
+*.gz
+*.iso
+*.jar
+*.rar
+*.tar
+*.zip
+
+# MuleSoft Exchange
+exchange-docs/

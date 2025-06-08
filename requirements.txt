@@ -1,0 +1,28 @@
+# Hugging Face and ML Dependencies
+transformers==4.35.0
+torch==2.1.0
+torchvision==0.16.0
+pillow==10.0.1
+numpy==1.24.3
+scipy==1.11.3
+
+# Image Processing
+opencv-python==4.8.1.78
+scikit-image==0.21.0
+
+# HTTP and API
+requests==2.31.0
+urllib3==2.0.7
+
+# Data Processing
+pandas==2.1.1
+json5==0.9.14
+
+# Utilities
+python-dotenv==1.0.0
+pyyaml==6.0.1
+uuid==1.30
+
+# Optional GPU support (uncomment if using CUDA)
+# torch==2.1.0+cu118
+# torchvision==0.16.0+cu118

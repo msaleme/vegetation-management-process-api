@@ -1,0 +1,14 @@
+{
+  "minMuleVersion": "4.4.0",
+  "requiredProducts": [],
+  "classLoaderModelLoaderDescriptor": {
+    "id": "mule",
+    "attributes": {
+      "exportedResources": []
+    }
+  },
+  "bundleDescriptorLoader": {
+    "id": "mule",
+    "attributes": {}
+  }
+}

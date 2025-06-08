@@ -1,0 +1,218 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns:python="http://www.mulesoft.org/schema/mule/python"
+      xmlns:http="http://www.mulesoft.org/schema/mule/http"
+      xmlns:file="http://www.mulesoft.org/schema/mule/file"
+      xmlns="http://www.mulesoft.org/schema/mule/core"
+      xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+      xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+                          http://www.mulesoft.org/schema/mule/python http://www.mulesoft.org/schema/mule/python/current/mule-python.xsd
+                          http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+                          http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd
+                          http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+
+    <!-- Input Validation Sub-flow -->
+    <sub-flow name="validate-input-flow" doc:name="Validate Input">
+        <ee:transform doc:name="Validate Request">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/java
+---
+{
+    imageUrl: payload.imageUrl,
+    imageBase64: payload.imageBase64,
+    analysisType: payload.analysisType,
+    coordinates: payload.coordinates,
+    metadata: payload.metadata
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+        
+        <choice doc:name="Check Image Source">
+            <when expression="#[payload.imageUrl != null]">
+                <set-variable value="url" doc:name="Set Source Type" variableName="imageSource"/>
+                <set-variable value="#[payload.imageUrl]" doc:name="Set Image Path" variableName="imagePath"/>
+            </when>
+            <when expression="#[payload.imageBase64 != null]">
+                <set-variable value="base64" doc:name="Set Source Type" variableName="imageSource"/>
+                <flow-ref doc:name="Decode Base64 Image" name="decode-base64-image-flow"/>
+            </when>
+            <otherwise>
+                <raise-error doc:name="Missing Image Data" type="CUSTOM:VALIDATION_ERROR" description="Either imageUrl or imageBase64 must be provided"/>
+            </otherwise>
+        </choice>
+    </sub-flow>
+
+    <!-- Decode Base64 Image Sub-flow -->
+    <sub-flow name="decode-base64-image-flow" doc:name="Decode Base64 Image">
+        <python:execute doc:name="Decode Base64" config-ref="Python_Config">
+            <python:code><![CDATA[
+import base64
+import uuid
+import os
+
+def decode_base64_image(image_base64):
+    try:
+        # Remove data URL prefix if present
+        if ',' in image_base64:
+            image_base64 = image_base64.split(',')[1]
+        
+        # Decode base64
+        image_data = base64.b64decode(image_base64)
+        
+        # Generate unique filename
+        filename = f"temp_image_{str(uuid.uuid4())}.jpg"
+        filepath = f"/tmp/vegetation-images/{filename}"
+        
+        # Ensure directory exists
+        os.makedirs(os.path.dirname(filepath), exist_ok=True)
+        
+        # Write image to file
+        with open(filepath, 'wb') as f:
+            f.write(image_data)
+        
+        return filepath
+    except Exception as e:
+        raise Exception(f"Failed to decode base64 image: {str(e)}")
+
+result = decode_base64_image(payload['imageBase64'])
+]]></python:code>
+            <python:parameters><![CDATA[#[payload]]]></python:parameters>
+        </python:execute>
+        <set-variable value="#[payload]" doc:name="Set Image Path" variableName="imagePath"/>
+    </sub-flow>
+
+    <!-- Hugging Face Processing Sub-flow -->
+    <sub-flow name="huggingface-processing-flow" doc:name="Hugging Face Processing">
+        <python:execute doc:name="Process with Hugging Face" config-ref="Python_Config">
+            <python:code><![CDATA[
+import requests
+import base64
+import json
+from PIL import Image
+import io
+import numpy as np
+
+def process_vegetation_image(image_path, analysis_type, coordinates=None, metadata=None):
+    try:
+        # Initialize results
+        results = {}
+        
+        # Load and preprocess image
+        with Image.open(image_path) as img:
+            # Convert to RGB if necessary
+            if img.mode != 'RGB':
+                img = img.convert('RGB')
+            
+            # Resize image for processing (optional)
+            img_resized = img.resize((224, 224))
+        
+        # Vegetation Health Analysis
+        if analysis_type == "vegetation-health":
+            # Mock Hugging Face API call for vegetation health
+            # In production, this would call actual HF models like:
+            # - microsoft/DinoV2 for feature extraction
+            # - google/vit-base-patch16-224 for classification
+            
+            # Simulate vegetation health scoring
+            health_score = np.random.uniform(0.6, 0.95)
+            results['vegetation_health_score'] = round(health_score, 2)
+            results['recommendations'] = [
+                "Regular watering recommended" if health_score < 0.8 else "Vegetation in good health",
+                "Monitor for pest activity",
+                "Consider fertilization in spring"
+            ]
+        
+        # Coverage Analysis
+        elif analysis_type == "coverage-analysis":
+            # Simulate vegetation coverage analysis
+            coverage = np.random.uniform(60.0, 90.0)
+            results['coverage_percentage'] = round(coverage, 1)
+            results['recommendations'] = [
+                "Good coverage detected" if coverage > 75 else "Consider replanting sparse areas",
+                "Monitor growth patterns"
+            ]
+        
+        # Species Identification
+        elif analysis_type == "species-identification":
+            # Mock species detection
+            species_list = ["oak", "maple", "pine", "grass", "fern", "moss"]
+            detected_species = np.random.choice(species_list, size=np.random.randint(2, 5), replace=False).tolist()
+            results['species_detected'] = detected_species
+            results['recommendations'] = [
+                f"Identified {len(detected_species)} species",
+                "Monitor biodiversity levels"
+            ]
+        
+        # Risk Assessment
+        elif analysis_type == "risk-assessment":
+            risk_levels = ["low", "medium", "high"]
+            risk_level = np.random.choice(risk_levels, p=[0.6, 0.3, 0.1])
+            results['risk_level'] = risk_level
+            results['recommendations'] = [
+                "Regular monitoring recommended" if risk_level == "low" else f"{risk_level.capitalize()} risk detected - immediate attention required",
+                "Check for disease symptoms",
+                "Assess environmental factors"
+            ]
+        
+        # Add common analysis results
+        results['confidence_score'] = round(np.random.uniform(0.85, 0.98), 2)
+        
+        # Add coordinate-based analysis if provided
+        if coordinates:
+            results['location_analysis'] = {
+                "climate_zone": "temperate",
+                "seasonal_recommendation": metadata.get('season', 'unknown') if metadata else 'unknown'
+            }
+        
+        return results
+        
+    except Exception as e:
+        raise Exception(f"Vegetation analysis failed: {str(e)}")
+
+# Execute the analysis
+analysis_results = process_vegetation_image(
+    vars['imagePath'], 
+    payload['analysisType'], 
+    payload.get('coordinates'), 
+    payload.get('metadata')
+)
+]]></python:code>
+            <python:parameters><![CDATA[#[{
+    imagePath: vars.imagePath,
+    analysisType: payload.analysisType,
+    coordinates: payload.coordinates,
+    metadata: payload.metadata
+}]]]></python:parameters>
+        </python:execute>
+        <set-variable value="#[payload]" doc:name="Set Analysis Results" variableName="analysisResults"/>
+    </sub-flow>
+
+    <!-- Format Response Sub-flow -->
+    <sub-flow name="format-response-flow" doc:name="Format Response">
+        <ee:transform doc:name="Format Final Response">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  analysisId: vars.analysisId,
+  status: "completed",
+  results: vars.analysisResults,
+  confidence_score: vars.analysisResults.confidence_score,
+  processing_time_ms: (now() - vars.startTime) as Number,
+  timestamp: now()
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+        
+        <!-- Clean up temporary files -->
+        <choice doc:name="Clean Temp Files">
+            <when expression="#[vars.imageSource == 'base64']">
+                <file:delete doc:name="Delete Temp Image" config-ref="File_Config" path="#[vars.imagePath]"/>
+            </when>
+        </choice>
+    </sub-flow>
+
+</mule>
