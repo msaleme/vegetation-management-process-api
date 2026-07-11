@@ -47,6 +47,18 @@ Model output should be treated as decision support. A production design should i
 
 Inspect the RAML and Mule flows for the authoritative contract and implementation details.
 
+## What's actually included
+
+This repository contains a real implementation skeleton, not just documentation. Present in the tree:
+
+- **Mule flows** (`src/main/mule/`): the API flow (`vegetation-management-api.xml`) and a Hugging Face model-adapter flow (`huggingface-integration.xml`).
+- **Hugging Face model code** (`src/main/resources/python/vegetation_models.py`): a `VegetationAnalyzer` using `transformers` pipelines for image classification (health), object detection (species), and image segmentation (coverage), with CPU/GPU device selection and a fallback path when models cannot load.
+- **API contract** (`src/main/resources/api/vegetation-management-api.raml`): RAML specification for the analyze/batch/status/health operations.
+- **Python ML dependencies** (`requirements.txt`): `transformers`, `torch`, `torchvision`, `pillow`, `opencv-python`, `scikit-image`, and supporting libraries.
+- **Configuration and build** (`config/application.yaml`, `pom.xml`, `mule-artifact.json`).
+
+Model choices, thresholds, and outputs are for evaluation only and require validation against representative utility datasets before operational use — see the project status note above.
+
 ## Portfolio context
 
 This repository is part of a broader [utility grid-modernization portfolio](https://github.com/msaleme/utility-ai-mulesoft-api/blob/master/docs/portfolio-guide.md) covering grid intelligence, field operations, smart meters, customer programs, compliance, and governed AI-assisted operations.
