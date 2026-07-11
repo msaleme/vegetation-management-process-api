@@ -49,7 +49,11 @@ Inspect the RAML and Mule flows for the authoritative contract and implementatio
 
 ## What's actually included
 
-This repository contains a real implementation skeleton, not just documentation. Present in the tree:
+This repository contains executable integration and prototype model-adapter code, not an operational vegetation-management model.
+
+> **Prototype limitation:** The model adapter uses general-purpose pretrained vision models and heuristic mappings; it has not been trained or validated for utility vegetation health, species identification, clearance measurement, or risk classification. When models cannot load, portions of the current code return mock or synthetic values (including randomized coverage and health scores). Those fallback results must be visibly labeled or disabled before any operational evaluation.
+
+Present in the tree:
 
 - **Mule flows** (`src/main/mule/`): the API flow (`vegetation-management-api.xml`) and a Hugging Face model-adapter flow (`huggingface-integration.xml`).
 - **Hugging Face model code** (`src/main/resources/python/vegetation_models.py`): a `VegetationAnalyzer` using `transformers` pipelines for image classification (health), object detection (species), and image segmentation (coverage), with CPU/GPU device selection and a fallback path when models cannot load.
